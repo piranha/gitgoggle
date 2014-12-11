@@ -27,8 +27,8 @@
 (defn org-repos [org]
   (get* (format "https://api.github.com/orgs/%s/repos" org)))
 
-(defn user-repos [org]
-  (get* (format "https://api.github.com/user/repos" org)))
+(defn user-repos [user]
+  (get* (format "https://api.github.com/user/%s/repos" user)))
 
 (defn coerce-dates [record]
   (reduce #(update-in %1 [%2] c/from-string) record [:created_at :updated_at]))
@@ -88,8 +88,9 @@
                                   (System/getenv "GITHUB_TOKEN")
                                   (throw (RuntimeException. token-message)))
                 *http-quiet*  quiet
-                *long-title*  long-title]
-        (let [issues (->> (or (seq repos) (map :name (org-repos org)))
+                *long-title*  long-title
+                fetch-repos   (if *user* user-repos org-repos)]
+        (let [issues (->> (or (seq repos) (map :name (fetch-repos org)))
                           (pmap #(repo-issues org %))
                           (mapcat identity))]
           (if (seq issues)
